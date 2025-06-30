@@ -331,33 +331,41 @@ export function BookingTable() {
   const [viewGuestPhoneNumber, setViewGuestPhoneNumber] = useState('');
   const [allCenters, setAllCenters] = useState<string[]>([]);
   const isAdmin = user?.centers?.includes('admin');
+  const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
+  const [rescheduleGuest, setRescheduleGuest] = useState<Guest | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState<Date | null>(null);
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
+  const [slotLoading, setSlotLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [reschedulePinCode, setReschedulePinCode] = useState("");
+  const [apiCenters, setApiCenters] = useState<string[]>([]);
+  const [testStatusFilter, setTestStatusFilter] = useState('all');
 
-  // Fetch all centers if user is admin
   useEffect(() => {
-    if (isAdmin) {
-      axios.get("https://diagnostics.olivaclinic.com/backend/centers")
-        .then(res => {
-          // Extract center names from the response objects
-          const centerNames = res.data.map((center: { id: number; name: string } | string) => {
-            // If center is an object with name property, use that, otherwise use the center string
-            return typeof center === 'object' && center !== null ? center.name : center;
-          });
+    axios.get("https://diagnostics.olivaclinic.com/backend/centers")
+      .then(res => {
+        const centerNames = res.data.map((center: { id: number; name: string } | string) => {
+          return typeof center === 'object' && center !== null ? center.name : center;
+        });
+        setApiCenters(centerNames);
+        if (isAdmin) {
           if (!centerNames.includes('admin')) {
             centerNames.push('admin');
           }
           setAllCenters(centerNames);
           setSelectedCenters(centerNames); // Set all centers as selected for admin
-        })
-        .catch(err => {
-          console.error('Failed to fetch centers:', err);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to load centers"
-          });
+        }
+      })
+      .catch(err => {
+        console.error('Failed to fetch centers:', err);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load centers"
         });
-    }
-  }, [isAdmin]);
+      });
+  }, []); // Only run once on mount
 
   const { data: bookings = [], isLoading, error } = useQuery({
     queryKey: ['guests', selectedCenters],
@@ -379,6 +387,12 @@ export function BookingTable() {
     }
   }, [user, isAdmin, allCenters]);
 
+  // Get unique TestStatus values from bookings
+  const testStatusOptions = Array.from(new Set(bookings.map((g: Guest) => g.TestStatus).filter(Boolean)));
+
+  // Get unique Status values from bookings
+  const statusOptions = Array.from(new Set(bookings.map((g: Guest) => g.Status).filter(Boolean)));
+
   const filteredbookings = bookings.filter((Guest: Guest) => {
     const matchesSearch = Guest.GuestName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          Guest.GuestCode.toLowerCase().includes(searchTerm.toLowerCase());
@@ -394,7 +408,8 @@ export function BookingTable() {
       if (toDate) matchesDate = matchesDate && GuestDate <= new Date(toDate);
     }
     
-    return matchesSearch && matchesStatus && matchesDate;
+    const matchesTestStatus = testStatusFilter === 'all' || Guest.TestStatus === testStatusFilter;
+    return matchesSearch && matchesStatus && matchesDate && matchesTestStatus;
   });
 
   // Pagination logic
@@ -431,6 +446,64 @@ export function BookingTable() {
         title: "Error",
         description: "Failed to load Guest details",
       });
+    }
+  };
+
+  const handleOpenReschedule = (guest: Guest) => {
+    setRescheduleGuest(guest);
+    setRescheduleDate(new Date(guest.Date));
+    setSelectedTimeSlot("");
+    setAvailableSlots([]);
+    setReschedulePinCode("");
+    setRescheduleDialogOpen(true);
+  };
+
+  const fetchAvailableSlots = async () => {
+    if (!reschedulePinCode || !rescheduleDate) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Enter pin code and date to fetch slots.",
+      });
+      return;
+    }
+    try {
+      setSlotLoading(true);
+      toast({ title: "Loading", description: "Fetching available slots..." });
+      const response = await apiService.getAvailableSlots(reschedulePinCode, format(rescheduleDate, "yyyy-MM-dd"));
+      if (response.status && response.slots.length > 0) {
+        setAvailableSlots(response.slots);
+        toast({ title: "Success", description: "Slots fetched successfully." });
+      } else {
+        setAvailableSlots([]);
+        toast({ variant: "destructive", title: "No Slots", description: "No slots available for this date and pin code." });
+      }
+    } catch (error) {
+      setAvailableSlots([]);
+      toast({ variant: "destructive", title: "Error", description: "Failed to fetch slots." });
+    } finally {
+      setSlotLoading(false);
+    }
+  };
+
+  const handleReschedule = async () => {
+    if (!rescheduleGuest?.BookingID || !rescheduleDate || !selectedTimeSlot) return;
+    setLoading(true);
+    try {
+      const payload = {
+        guest_code: rescheduleGuest.GuestCode,
+        confirmed_date: format(rescheduleDate, "yyyy-MM-dd"),
+        confirmed_time_slot: selectedTimeSlot,
+        booking_id: rescheduleGuest.BookingID,
+      };
+      await apiService.rescheduleBooking(payload);
+      toast({ title: "Success", description: "Booking rescheduled successfully!" });
+      setRescheduleDialogOpen(false);
+      // Optionally, refresh bookings
+    } catch (err) {
+      toast({ variant: "destructive", title: "Error", description: "Failed to reschedule booking." });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -482,7 +555,7 @@ export function BookingTable() {
             value={selectedCenters[0] || "all"}
             onValueChange={(value) => {
               if (value === "all" && isAdmin) {
-                setSelectedCenters(allCenters);
+                setSelectedCenters(apiCenters);
               } else {
                 setSelectedCenters([value]);
               }
@@ -493,8 +566,22 @@ export function BookingTable() {
             </SelectTrigger>
             <SelectContent>
               {isAdmin && <SelectItem value="all">All Centers</SelectItem>}
-              {(isAdmin ? allCenters : user?.centers || []).map((center) => (
+              {apiCenters.map((center) => (
                 <SelectItem key={center} value={center}>{center}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={testStatusFilter}
+            onValueChange={setTestStatusFilter}
+          >
+            <SelectTrigger className="w-[150px] focus-visible:ring-[#00B5B1]">
+              <SelectValue placeholder="Test Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Test Status</SelectItem>
+              {testStatusOptions.map((status) => (
+                <SelectItem key={status} value={status}>{status}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -511,42 +598,29 @@ export function BookingTable() {
               <TableHead className="text-white w-[10%] font-medium">Date ↑</TableHead>
               <TableHead className="text-white w-[12%] font-medium">Center</TableHead>
               <TableHead className="text-white w-[12%] font-medium">Test Status</TableHead>
-              <TableHead className="text-white w-[8%] font-medium p-0">
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="border-white text-white bg-transparent h-8 focus:ring-0">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="closed">Closed</SelectItem>
-                  </SelectContent>
-                </Select>
-              </TableHead>
-              <TableHead className="text-white w-[15%] font-medium">Actions</TableHead>
+              <TableHead className="text-white w-[15%] font-medium text-center">Actions</TableHead>
               <TableHead className="text-white w-[5%] font-medium">Report</TableHead>
               <TableHead className="text-white w-[5%] font-medium">ID</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {currentbookings.map((Guest: Guest, index: number) => (
-              <TableRow key={index} className="hover:bg-[#E6F7F7]">
+              <TableRow key={index}>
                 <TableCell className="font-medium truncate">{Guest.GuestName}</TableCell>
                 <TableCell className="truncate">{Guest.Gender}</TableCell>
                 <TableCell className="truncate">{Guest.GuestCode}</TableCell>
                 <TableCell className="truncate">
-                    {(() => {
-                      const date = new Date(Guest.Date);
-                      const day = String(date.getDate()).padStart(2, '0');
-                      const month = String(date.getMonth() + 1).padStart(2, '0'); // months are 0-indexed
-                      const year = date.getFullYear();
-                      return `${day}/${month}/${year}`;
-                    })()}
-                  </TableCell>
+                  {(() => {
+                    const date = new Date(Guest.Date);
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const month = String(date.getMonth() + 1).padStart(2, '0'); // months are 0-indexed
+                    const year = date.getFullYear();
+                    return `${day}/${month}/${year}`;
+                  })()}
+                </TableCell>
                 <TableCell className="truncate">{Guest.Center}</TableCell>
-                <TableCell className="truncate">{Guest.TestStatus || '—'}</TableCell>
                 <TableCell>
-                  <Badge 
+                  <Badge
                     variant={Guest.Status === 'Closed' ? 'default' : 'secondary'}
                     className={Guest.Status === 'Closed' ? 'bg-[#00B5B1] hover:bg-[#00A19E]' : 'bg-[#E6F7F7] text-[#00B5B1] hover:bg-[#D1F1F1]'}
                   >
@@ -555,29 +629,39 @@ export function BookingTable() {
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       className="bg-[#00B5B1] hover:bg-[#00A19E] text-white whitespace-nowrap px-2 h-8 flex-1"
                       onClick={() => handleBookSlot(Guest.GuestCode)}
                     >
                       Book Slot
                     </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
+                    <Button
+                      size="sm"
+                      variant="outline"
                       className="border-[#00B5B1] text-[#00B5B1] hover:bg-[#E6F7F7] h-8 aspect-square p-0"
                       onClick={() => handleViewGuest(Guest.GuestCode,Guest.Phone)}
                     >
                       <Eye className="h-3 w-3" />
                     </Button>
+                    {Guest.BookingID && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-[#00B5B1] text-[#00B5B1] hover:bg-[#E6F7F7] h-8 px-2"
+                        onClick={() => handleOpenReschedule(Guest)}
+                      >
+                        Reschedule
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="text-center">
                   {Guest.ReportURL ? (
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="h-8 aspect-square p-0 mx-auto border-[#00B5B1] text-[#00B5B1] hover:bg-[#E6F7F7]" 
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 aspect-square p-0 mx-auto border-[#00B5B1] text-[#00B5B1] hover:bg-[#E6F7F7]"
                       asChild
                     >
                       <a href={Guest.ReportURL} target="_blank" rel="noopener noreferrer">
@@ -659,6 +743,63 @@ export function BookingTable() {
           phoneNumber={viewGuestPhoneNumber}
           onClose={() => setViewGuestDialogOpen(false)}
       />
+      {rescheduleDialogOpen && rescheduleGuest && (
+        <Dialog open={rescheduleDialogOpen} onOpenChange={setRescheduleDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Reschedule Booking</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <label>Pin Code</label>
+                <Input
+                  placeholder="Enter pin code"
+                  value={reschedulePinCode}
+                  onChange={e => setReschedulePinCode(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <label>Date</label>
+                <DatePicker
+                  selected={rescheduleDate}
+                  onChange={(date: Date | null) => date && setRescheduleDate(date)}
+                  dateFormat="dd-MM-yyyy"
+                  className="w-full rounded-md border p-2"
+                  minDate={new Date()}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Button variant="outline" className="bg-green-500 text-white hover:bg-green-600" onClick={fetchAvailableSlots} disabled={slotLoading}>
+                  {slotLoading ? "Fetching..." : "Fetch Available Slots"}
+                </Button>
+              </div>
+              <div className="grid gap-2">
+                <label>Time Slot</label>
+                <Select value={selectedTimeSlot} onValueChange={setSelectedTimeSlot}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a time slot" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableSlots.map((timeRange, idx) => (
+                      <SelectItem key={idx} value={timeRange}>
+                        {timeRange}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setRescheduleDialogOpen(false)} className="bg-red-500 text-white hover:bg-red-600">
+                Cancel
+              </Button>
+              <Button onClick={handleReschedule} disabled={loading || !selectedTimeSlot} className="bg-blue-500 text-white hover:bg-blue-600">
+                {loading ? "Rescheduling..." : "Submit"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

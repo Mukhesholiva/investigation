@@ -28,22 +28,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <SidebarTrigger className="text-gray-600 hover:text-gray-900" />
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-lg">
-                    <span className="text-white font-bold text-sm">OD</span>
-                  </div>
-                  <h1 className="text-2xl font-bold text-gray-900">Oliva Diagnostics Hub</h1>
-                </div>
               </div>
               
               <div className="flex items-center gap-3">
                 <span className="text-sm text-gray-600">
                   Welcome, {user?.username}
                 </span>
-                <Button variant="outline" className="bg-green-500 text-white border-green-500 hover:bg-green-600">
-                  <User className="h-4 w-4 mr-2" />
-                  Show Profile
-                </Button>
                 <Button 
                   variant="outline" 
                   className="text-red-600 border-red-600 hover:bg-red-50"
