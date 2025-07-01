@@ -14,11 +14,9 @@ import { cn } from "@/lib/utils"
 import OlivaLogo from '@/assets/Oliva_skin.png';
 
 const items = [
-  { title: "Home", url: "/", icon: Home },
   { title: "Dashboard", url: "/dashboard", icon: BarChart3 },
   { title: "Bookings", url: "/bookings", icon: Users },
   { title: "Reports", url: "/reports", icon: FileText },
-  { title: "Settings", url: "/settings", icon: Settings },
 ]
 
 export function AppSidebar() {
