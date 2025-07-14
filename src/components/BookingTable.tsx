@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Download, Eye } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { apiService, Guest } from "@/services/api";
+import { apiService, Guest } from "@/utils/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import axios from 'axios';
@@ -644,16 +644,7 @@ export function BookingTable() {
                     >
                       <Eye className="h-3 w-3" />
                     </Button>
-                    {Guest.BookingID && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-[#00B5B1] text-[#00B5B1] hover:bg-[#E6F7F7] h-8 px-2"
-                        onClick={() => handleOpenReschedule(Guest)}
-                      >
-                        Reschedule
-                      </Button>
-                    )}
+                   
                   </div>
                 </TableCell>
                 <TableCell className="text-center">

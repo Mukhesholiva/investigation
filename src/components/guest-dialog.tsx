@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { useToast } from "@/hooks/use-toast";
-import { apiService } from "@/services/api";
+import { apiService } from "@/utils/api";
 import { format } from 'date-fns';
 
 export function GuestDetailDialog({ open, onClose, guestCode, phoneNumber }: {

@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Guests from "./pages/Patients";
 import Reports from "./pages/Reports";
+import DownloadReports from "./pages/DownloadReports";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
@@ -49,6 +50,11 @@ function AppRoutes() {
       <Route path="/reports" element={
         <ProtectedRoute>
           <Reports />
+        </ProtectedRoute>
+      } />
+      <Route path="/download-reports" element={
+        <ProtectedRoute>
+          <DownloadReports />
         </ProtectedRoute>
       } />
       <Route path="/settings" element={

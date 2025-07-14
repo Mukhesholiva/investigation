@@ -3,7 +3,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, TrendingUp, FileText, PieChart as PieChartIcon, BarChart as BarChartIcon, LineChart as LineChartIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { apiService } from "@/services/api";
+import { apiService } from "@/utils/api";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   BarChart,
