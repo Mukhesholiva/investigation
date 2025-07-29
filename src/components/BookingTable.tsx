@@ -248,7 +248,30 @@ function BookSlotDialog({ isOpen, onClose, guestCode, fetchGuests }: BookSlotDia
                   onChange={(e) => setAddress(e.target.value)}
                 />
               </div>
-              
+              <div className="grid gap-2">
+                <label>Pin Code</label>
+                <Input
+                  value={pinCode}
+                  onChange={(e) => {
+                    // Only allow numbers and max 6 digits
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    setPinCode(val);
+                  }}
+                  maxLength={6}
+                  inputMode="numeric"
+                  pattern="[0-9]{6}"
+                  placeholder="Enter 6-digit pin code"
+                  onBlur={() => {
+                    if (pinCode.length > 0 && pinCode.length !== 6) {
+                      toast({
+                        variant: "destructive",
+                        title: "Invalid Pin Code",
+                        description: "Pin code must be exactly 6 digits.",
+                      });
+                    }
+                  }}
+                />
+              </div>
             </>
           )}
 
@@ -586,15 +609,15 @@ export function BookingTable() {
         <Table>
           <TableHeader className="bg-[#00B5B1]">
             <TableRow className="border-none">
-              <TableHead className="text-white w-[1%] font-medium">Name</TableHead>
-              <TableHead className="text-white w-[1%] font-medium">Gender</TableHead>
-              <TableHead className="text-white w-[1%] font-medium">Code</TableHead>
-              <TableHead className="text-white w-[1%] font-medium">Date ↑</TableHead>
-              <TableHead className="text-white w-[1%] font-medium">Center</TableHead>
-              <TableHead className="text-white w-[1%] font-medium">Test Status</TableHead>
-              <TableHead className="text-white w-[1%] font-medium text-center">Actions</TableHead>
-              <TableHead className="text-white w-[2%] font-medium">Report</TableHead>
-              <TableHead className="text-white w-[2%] font-medium">ID</TableHead>
+              <TableHead className="text-white w-[15%] font-medium">Name</TableHead>
+              <TableHead className="text-white w-[8%] font-medium">Gender</TableHead>
+              <TableHead className="text-white w-[10%] font-medium">Code</TableHead>
+              <TableHead className="text-white w-[10%] font-medium">Date ↑</TableHead>
+              <TableHead className="text-white w-[12%] font-medium">Center</TableHead>
+              <TableHead className="text-white w-[12%] font-medium">Test Status</TableHead>
+              <TableHead className="text-white w-[15%] font-medium text-center">Actions</TableHead>
+              <TableHead className="text-white w-[5%] font-medium">Report</TableHead>
+              <TableHead className="text-white w-[5%] font-medium">ID</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -740,23 +763,7 @@ export function BookingTable() {
                 <Input
                   placeholder="Enter pin code"
                   value={reschedulePinCode}
-                  onChange={e => {
-                    // Only allow numbers and max 6 digits
-                    const val = e.target.value.replace(/\D/g, '').slice(0, 6);
-                    setReschedulePinCode(val);
-                  }}
-                  maxLength={6}
-                  inputMode="numeric"
-                  pattern="[0-9]{6}"
-                  onBlur={() => {
-                    if (reschedulePinCode.length > 0 && reschedulePinCode.length !== 6) {
-                      toast({
-                        variant: "destructive",
-                        title: "Invalid Pin Code",
-                        description: "Pin code must be exactly 6 digits.",
-                      });
-                    }
-                  }}
+                  onChange={e => setReschedulePinCode(e.target.value)}
                 />
               </div>
               <div className="grid gap-2">
