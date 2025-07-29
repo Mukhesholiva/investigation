@@ -740,7 +740,23 @@ export function BookingTable() {
                 <Input
                   placeholder="Enter pin code"
                   value={reschedulePinCode}
-                  onChange={e => setReschedulePinCode(e.target.value)}
+                  onChange={e => {
+                    // Only allow numbers and max 6 digits
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    setReschedulePinCode(val);
+                  }}
+                  maxLength={6}
+                  inputMode="numeric"
+                  pattern="[0-9]{6}"
+                  onBlur={() => {
+                    if (reschedulePinCode.length > 0 && reschedulePinCode.length !== 6) {
+                      toast({
+                        variant: "destructive",
+                        title: "Invalid Pin Code",
+                        description: "Pin code must be exactly 6 digits.",
+                      });
+                    }
+                  }}
                 />
               </div>
               <div className="grid gap-2">
