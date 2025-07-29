@@ -248,13 +248,7 @@ function BookSlotDialog({ isOpen, onClose, guestCode, fetchGuests }: BookSlotDia
                   onChange={(e) => setAddress(e.target.value)}
                 />
               </div>
-              <div className="grid gap-2">
-                <label>Pin Code</label>
-                <Input
-                  value={pinCode}
-                  onChange={(e) => setPinCode(e.target.value)}
-                />
-              </div>
+              
             </>
           )}
 
@@ -592,15 +586,15 @@ export function BookingTable() {
         <Table>
           <TableHeader className="bg-[#00B5B1]">
             <TableRow className="border-none">
-              <TableHead className="text-white w-[15%] font-medium">Name</TableHead>
-              <TableHead className="text-white w-[8%] font-medium">Gender</TableHead>
-              <TableHead className="text-white w-[10%] font-medium">Code</TableHead>
-              <TableHead className="text-white w-[10%] font-medium">Date ↑</TableHead>
-              <TableHead className="text-white w-[12%] font-medium">Center</TableHead>
-              <TableHead className="text-white w-[12%] font-medium">Test Status</TableHead>
-              <TableHead className="text-white w-[15%] font-medium text-center">Actions</TableHead>
-              <TableHead className="text-white w-[5%] font-medium">Report</TableHead>
-              <TableHead className="text-white w-[5%] font-medium">ID</TableHead>
+              <TableHead className="text-white w-[1%] font-medium">Name</TableHead>
+              <TableHead className="text-white w-[1%] font-medium">Gender</TableHead>
+              <TableHead className="text-white w-[1%] font-medium">Code</TableHead>
+              <TableHead className="text-white w-[1%] font-medium">Date ↑</TableHead>
+              <TableHead className="text-white w-[1%] font-medium">Center</TableHead>
+              <TableHead className="text-white w-[1%] font-medium">Test Status</TableHead>
+              <TableHead className="text-white w-[1%] font-medium text-center">Actions</TableHead>
+              <TableHead className="text-white w-[2%] font-medium">Report</TableHead>
+              <TableHead className="text-white w-[2%] font-medium">ID</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
